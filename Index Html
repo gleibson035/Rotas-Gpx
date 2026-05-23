@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Rotas Autocarros</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<style>
+body { margin:0; font-family: Arial; display:flex; }
+
+#sidebar {
+  width: 260px;
+  background:#111;
+  color:white;
+  height:100vh;
+  overflow:auto;
+  padding:10px;
+}
+
+#map {
+  flex:1;
+  height:100vh;
+}
+
+.line {
+  padding:10px;
+  margin:5px 0;
+  background:#222;
+  cursor:pointer;
+}
+
+.line:hover {
+  background:#444;
+}
+
+button {
+  margin-top:10px;
+  width:100%;
+  padding:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="sidebar">
+  <h3>Linhas</h3>
+
+  <div class="line" onclick="loadLine('1001')">1001</div>
+  <div class="line" onclick="loadLine('1616')">1616</div>
+  <div class="line" onclick="loadLine('1617')">1617</div>
+  <div class="line" onclick="loadLine('1107')">1107</div>
+
+  <button onclick="downloadGPX()">Baixar GPX</button>
+</div>
+
+<div id="map"></div>
+
+<script>
+
+const map = L.map('map').setView([38.7223, -9.1393], 12);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution:'OSM'
+}).addTo(map);
+
+let route = [];
+let poly;
+
+const routes = {
+  "1001": [
+    [38.72, -9.14],
+    [38.73, -9.15],
+    [38.74, -9.16]
+  ],
+  "1616": [
+    [38.71, -9.13],
+    [38.72, -9.12],
+    [38.73, -9.11]
+  ],
+  "1617": [
+    [38.70, -9.10],
+    [38.71, -9.11],
+    [38.72, -9.12]
+  ],
+  "1107": [
+    [38.75, -9.18],
+    [38.74, -9.17],
+    [38.73, -9.16]
+  ]
+};
+
+function loadLine(id){
+
+  route = routes[id];
+
+  map.eachLayer(layer=>{
+    if(layer instanceof L.Polyline || layer instanceof L.Marker){
+      map.removeLayer(layer);
+    }
+  });
+
+  route.forEach(p=>{
+    L.marker(p).addTo(map);
+  });
+
+  poly = L.polyline(route, {color:'blue'}).addTo(map);
+
+  map.fitBounds(poly.getBounds());
+}
+
+function downloadGPX(){
+
+  if(route.length === 0){
+    alert("Escolhe uma linha primeiro");
+    return;
+  }
+
+  let gpx = `<?xml version="1.0"?>
+<gpx version="1.1">
+<trk><name>Rota</name><trkseg>`;
+
+  route.forEach(p=>{
+    gpx += `<trkpt lat="${p[0]}" lon="${p[1]}"></trkpt>`;
+  });
+
+  gpx += `</trkseg></trk></gpx>`;
+
+  const blob = new Blob([gpx], {type:'application/gpx+xml'});
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = "rota.gpx";
+  a.click();
+}
+
+</script>
+
+</body>
+</html>
